@@ -103,16 +103,18 @@ void cacheAccessL3(uint64_t addr){
   ++tick;
   uint64_t setid,tagid;
   uint16_t if_hit,rep_pos;
-  if_hit=false;
   rep_pos=-1;
   // offset=addr%8;
   setid=(addr>>3)%16;
   tagid=(addr>>7);
   for(int i=0;i<L3_LINE_NUM;++i){
     if(!l3ucache[setid][i].valid) continue;
-    if(l3ucache[setid][i].tag==tagid) {if_hit=true;break;} 
+    if(l3ucache[setid][i].tag==tagid) {
+      ++l3_hits;
+      return;
+    } 
   }
-  if(if_hit) return;
+  ++l3_misses;
   for(int i=0;i<L3_LINE_NUM;++i){
     if(l3ucache[setid][i].valid) continue;
     rep_pos=i;
@@ -122,7 +124,7 @@ void cacheAccessL3(uint64_t addr){
     cachelineReplace(l3ucache,setid,rep_pos,tagid);
     return;
   }
-
+  ++l3_evictions;
   for(int i=1;i<L3_LINE_NUM;++i){
     if(l3ucache[setid][i].latest_used<l3ucache[setid][rep_pos].latest_used)
       rep_pos=i;
@@ -136,16 +138,18 @@ void cacheAccessL2(uint64_t addr,CacheLine **L1cache){
   ++tick;
   uint64_t setid,tagid;
   uint16_t if_hit,rep_pos;
-  if_hit=false;
   rep_pos=-1;
   // offset=addr%8;
   setid=(addr>>3)%8;
   tagid=(addr>>6);
   for(int i=0;i<L2_LINE_NUM;++i){
     if(!l2ucache[setid][i].valid) continue;
-    if(l2ucache[setid][i].tag==tagid) {if_hit=true;break;} 
+    if(l2ucache[setid][i].tag==tagid) {
+      ++l2_hits;
+      return;
+    } 
   }
-  if(if_hit) return;
+  ++l2_misses;
   cacheAccessL3(addr);
   for(int i=0;i<L2_LINE_NUM;++i){
     if(l2ucache[setid][i].valid) continue;
@@ -156,7 +160,7 @@ void cacheAccessL2(uint64_t addr,CacheLine **L1cache){
     cachelineReplace(l2ucache,setid,rep_pos,tagid);
     return;
   }
-
+  ++l2_evictions;
   for(int i=1;i<L2_LINE_NUM;++i){
     if(l2ucache[setid][i].latest_used<l2ucache[setid][rep_pos].latest_used)
       rep_pos=i;
@@ -171,7 +175,6 @@ void cacheAccessL1(uint64_t addr,CacheLine ** L1cache){
   ++tick;
   uint64_t setid,tagid;
   uint16_t if_hit,rep_pos;
-  if_hit=false;
   rep_pos=-1;
   // offset=addr%8;
   setid=(addr>>3)%4;
@@ -180,7 +183,13 @@ void cacheAccessL1(uint64_t addr,CacheLine ** L1cache){
     if(!L1cache[setid][i].valid) continue;
     if(L1cache[setid][i].tag==tagid) {if_hit=true;break;} 
   }
-  if(if_hit) return;
+  if(if_hit) {
+    if(L1cache==&l1dcache) ++l1d_hits;
+    else ++l1i_hits;
+    return;
+  }
+  if(L1cache==&l1dcache) ++l1d_misses;
+  else ++l1i_misses;
   cacheAccessL2(addr,L1cache);
   for(int i=0;i<L1_LINE_NUM;++i){
     if(L1cache[setid][i].valid) continue;
@@ -191,7 +200,8 @@ void cacheAccessL1(uint64_t addr,CacheLine ** L1cache){
     cachelineReplace(L1cache,setid,rep_pos,tagid);
     return;
   }
-
+  if(L1cache==&l1dcache) ++l1d_evictions;
+  else ++l1i_evictions;
   for(int i=1;i<L1_LINE_NUM;++i){
     if(L1cache[setid][i].latest_used<L1cache[setid][rep_pos].latest_used)
       rep_pos=i;
@@ -213,9 +223,11 @@ void cacheStoreL1(uint64_t addr){
     if(!l1dcache[setid][i].valid) continue;
     if(l1dcache[setid][i].tag==tagid) {
       l1dcache[setid][i].dirty=true;
+      ++l1d_hits;
       return;
     } 
   }
+  ++l1d_misses;
   cacheAccessL2(addr,l1dcache);
   for(int i=0;i<L1_LINE_NUM;++i){
     if(l1dcache[setid][i].valid) continue;
@@ -226,7 +238,7 @@ void cacheStoreL1(uint64_t addr){
     cachelineReplace(l1dcache,setid,rep_pos,tagid);
     return;
   }
-
+  ++l1d_evictions;
   for(int i=1;i<L1_LINE_NUM;++i){
     if(l1dcache[setid][i].latest_used<l1dcache[setid][rep_pos].latest_used)
       rep_pos=i;
