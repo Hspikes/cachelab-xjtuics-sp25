@@ -134,7 +134,7 @@ void cacheAccessL3(uint64_t addr){
     if(l3ucache[setid][i].latest_used<l3ucache[setid][rep_pos].latest_used)
       rep_pos=i;
   }
-  int k=(l3ucache[setid][rep_pos].tag<<8)+(setid<<4);
+  uint64_t k=(l3ucache[setid][rep_pos].tag<<8)+(setid<<4);
   backInvalidL2(k);
   rep_pos=setid*L3_LINE_NUM+rep_pos;
   cachelineReplace((CacheLine*)&l3ucache,rep_pos,tagid);
@@ -174,7 +174,7 @@ void cacheAccessL2(uint64_t addr){
     if(l2ucache[setid][i].latest_used<l2ucache[setid][rep_pos].latest_used)
       rep_pos=i;
   }
-  int k=(l2ucache[setid][rep_pos].tag<<6)+(setid<<3);
+  uint64_t k=(l2ucache[setid][rep_pos].tag<<6)+(setid<<3);
   backInvalidL1(k,(CacheLine*)&l1dcache);
   backInvalidL1(k,(CacheLine*)&l1icache);
   if(l2ucache[setid][rep_pos].dirty) storeL3(k);
