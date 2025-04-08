@@ -1,0 +1,20 @@
+test specific example:
+./csim -t *.trace
+
+show cache state after one access:
+./csim -nt *.trace -b 2 -l 1
+
+gdb store breakpoints:
+save breakpoints gdb.cfg
+source gdb.cfg
+              ans 
+mytest 7500    t
+mytest2 8725   f
+mytest3 8000   t
+mytest4 8600   f 
+mytest5 8500   t
+mytest6 8550   f
+mytest7 8530   t
+mytest8 8540   t
+mytest9 8545   f
+
